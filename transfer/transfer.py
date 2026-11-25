@@ -1,7 +1,7 @@
 # Transfer tests for the per-buoy model (results.md §5): train on one file, predict another it has never seen.
 # usage: python3 -I transfer.py <dir with WEC_*.csv> <out.json>
 import sys, os, json, time
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pipeline'))
 import numpy as np, pandas as pd
 from common import load_unique, feats_all, model, farm_metrics, fit_theta, P_ISO
 

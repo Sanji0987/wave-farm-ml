@@ -21,8 +21,10 @@ Headline results and every number: [`docs/results.md`](docs/results.md). Sources
 | `demo/wave_farm_demo.ipynb` | Live demo notebook (runs in under a minute on a 2,000-layout subsample) |
 | `demo/Wave_Farm_Lab.html` | Interactive offline demo: drag buoys, the model predicts power live in the browser |
 | `model1/` | Model 1 (where ERA5 can't be trusted): `pick_stations.py` (NOAA buoy stations), `era5_download.py` (ERA5 via the CDS API), `geometry.py` (coastline/depth features from GEBCO: distance to coast, slope, fetch rose), `build_pairs.py` (buoy + ERA5 + geometry → `pairs.csv`), `shelter_classifier.py` (logistic regression and random forest, leave-one-region-out, AUC: the original 28-feature models), `model1_five_features.py` (re-check on the 5 features in `station_summary.csv`, plus the distance-to-coast baseline) |
-| `simulator/` | Our scripts around the third-party simulator: `climate.m` (sea-state tables as in the simulator's `Main.m`), `run_orig.m` (simulate any layout with a given PTO stiffness/damping and interaction cut-off kR), `kR_cutoff.patch` (one-line change making kR settable), `best_rows.py`, `ds_iso.py` (pull layouts and the lone-buoy power out of the dataset) |
-| `transfer/` | Transfer tests for the per-buoy model (`transfer.py`, `common.py`: Perth 49 → 100, Sydney 49 → 100, Perth ↔ Sydney); `wec_audit_early.py` is the first version (duplicates, leak and transfer on simpler features) |
+| `simulator/` | Our scripts around the third-party simulator: `climate.m` (sea-state tables as in the simulator's `Main.m`), `run_batch.m` (simulate many layouts in one session, used by the loop), `run_orig.m` (simulate any layout with a given PTO stiffness/damping and interaction cut-off kR), `kR_cutoff.patch` (one-line change making kR settable), `best_rows.py`, `ds_iso.py` (pull layouts and the lone-buoy power out of the dataset) |
+| `pipeline/common.py` | Shared loader and the 40 per-buoy features (vectorised; identical to `train_perbuoy.py`, checked by `python3 pipeline/common.py`) |
+| `loop/closed_loop.py` | Closed loop rebuilt 25 Nov 2026: model proposes layouts (hill climb on the model), simulator scores them (`simulator/run_batch.m`, parallel Octave workers), retrain with the new layouts; also tracks a never-retrained model. `mode random` / `rules` are the model-free controls with the same budget. **Not yet run on the real simulator.** With a stand-in simulator (`SIM_STUB=1`) the two controls ran end to end; the loop mode has not completed a test run. |
+| `transfer/` | Transfer tests for the per-buoy model (`transfer.py`: Perth 49 → 100, Sydney 49 → 100, Perth ↔ Sydney); `wec_audit_early.py` is the first version (duplicates, leak and transfer on simpler features) |
 | `checks/dataset/` | Independent re-check of the dataset numbers (rows, repeats, thirds, twins) |
 | `checks/published_pipeline/` | Re-implementation of the published pipeline and the raw-coordinate / shape-feature models under random, exact-grouped and family-grouped splits (`prep.py`, `cv.py`; needs LightGBM) |
 | `checks/era5_sites/` | Independent re-check of the ERA5 and site numbers (band cells, six sites, periods, independent-site count, GEBCO depths) |
@@ -31,7 +33,7 @@ Headline results and every number: [`docs/results.md`](docs/results.md). Sources
 ## Not in this repo
 - **Data** (download it yourself, see [`data/README.md`](data/README.md)): UCI layouts, ERA5, GEBCO, the coastal-cell table.
 - **The wave-farm simulator**: third-party MATLAB code (Sergiienko, MATLAB Central File Exchange #71840, BSD licence), run in GNU Octave.
-- **Code lost in a workspace reset in October 2026 and not yet rebuilt**: the closed optimisation loop with its controls, the simulator calibration search, the Gaussian-process comparison and the site-energy calculation. Their results are recorded in `docs/results.md`, tagged as not re-checked. The `checks/` scripts were written in the 13 Nov 2026 re-check to reproduce the other lost analyses.
+- **Code lost in a workspace reset in October 2026 and not yet rebuilt**: the simulator calibration search, the Gaussian-process comparison and the site-energy calculation. Their results, and the October loop's, are recorded in `docs/results.md`, tagged as not re-checked (the October loop's layouts were lost too, so the rebuilt loop gives new numbers, not the same ones). The `checks/` scripts were written in the 13 Nov 2026 re-check to reproduce the other lost analyses.
 
 ## Run it
 ```bash
@@ -49,6 +51,9 @@ python3 transfer/transfer.py data out/transfer.json
 # simulator (GNU Octave + octave-netcdf; simulator unzipped to sim/, kR_cutoff.patch applied)
 octave simulator/climate.m sim out sim          # args: simulator dir, output dir, dir with the HCtimeseries .nc files
 octave simulator/run_orig.m sim out/climate_Perth.mat layout.csv 407400 96500 200 result.txt
+# closed loop (slow: ~30 min per 49-buoy layout in Octave; run on a many-core machine)
+python3 loop/closed_loop.py data/WEC_Perth_49.csv sim out/climate_Perth.mat out/loop loop 1      # also: random 1, rules 1
+WORKERS=12 python3 loop/closed_loop.py ...                                                  # parallel Octave processes
 # demo
 jupyter notebook demo/wave_farm_demo.ipynb           # or open demo/Wave_Farm_Lab.html in a browser
 ```
