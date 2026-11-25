@@ -1,0 +1,19 @@
+--- "data/sim/WEC_array_simulator - v1.0.1/arraySubmergedSphereParfor.m"	2020-02-05 23:38:46.000000000 +0000
++++ simcopy/arraySubmergedSphereParfor.m	2026-11-13 14:41:22.611238594 +0000
+@@ -31,6 +31,7 @@
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+ function [addedMass, dampingCoef, excForce] = arraySubmergedSphereParfor(array, wave, frequency, waveNumber, numApprox, varargin)
++global KR_CUTOFF; if isempty(KR_CUTOFF); KR_CUTOFF = 100; end   % a5_sim change: cut-off made settable (default 100 = original)
+ 
+ if nargin == 5
+     flag2D = 0;
+@@ -129,7 +130,7 @@
+                 theta_laml = acos(vect(3)/r_laml);
+                 beta_laml = atan2(vect(2),vect(1));
+ 
+-                if K*Rlaml > 100     % 25/11/2019 Neglect interaction between buoys
++                if K*Rlaml > KR_CUTOFF     % a5_sim change (was: > 100)
+                     continue
+                 end
+                 

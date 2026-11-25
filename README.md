@@ -20,12 +20,18 @@ Headline results and every number: [`docs/results.md`](docs/results.md). Sources
 | `analysis/deck_figures.py` | Figures used in the presentation |
 | `demo/wave_farm_demo.ipynb` | Live demo notebook (runs in under a minute on a 2,000-layout subsample) |
 | `demo/Wave_Farm_Lab.html` | Interactive offline demo: drag buoys, the model predicts power live in the browser |
+| `model1/` | Model 1 (where ERA5 can't be trusted): `pick_stations.py` (NOAA buoy stations), `era5_download.py` (ERA5 via the CDS API), `geometry.py` (coastline/depth features from GEBCO: distance to coast, slope, fetch rose), `build_pairs.py` (buoy + ERA5 + geometry → `pairs.csv`), `shelter_classifier.py` (logistic regression and random forest, leave-one-region-out, AUC: the original 28-feature models), `model1_five_features.py` (re-check on the 5 features in `station_summary.csv`, plus the distance-to-coast baseline) |
+| `simulator/` | Our scripts around the third-party simulator: `climate.m` (sea-state tables as in the simulator's `Main.m`), `run_orig.m` (simulate any layout with a given PTO stiffness/damping and interaction cut-off kR), `kR_cutoff.patch` (one-line change making kR settable), `best_rows.py`, `ds_iso.py` (pull layouts and the lone-buoy power out of the dataset) |
+| `transfer/` | Transfer tests for the per-buoy model (`transfer.py`, `common.py`: Perth 49 → 100, Sydney 49 → 100, Perth ↔ Sydney); `wec_audit_early.py` is the first version (duplicates, leak and transfer on simpler features) |
+| `checks/dataset/` | Independent re-check of the dataset numbers (rows, repeats, thirds, twins) |
+| `checks/published_pipeline/` | Re-implementation of the published pipeline and the raw-coordinate / shape-feature models under random, exact-grouped and family-grouped splits (`prep.py`, `cv.py`; needs LightGBM) |
+| `checks/era5_sites/` | Independent re-check of the ERA5 and site numbers (band cells, six sites, periods, independent-site count, GEBCO depths) |
 | `demo/src/` | How the demo is built: `wfm_core.js` (features + tree walk in JavaScript, identical to Python), `export_demo_data.py`, `build_demo.py`, `app.html`, `verify_js.js`, `optimise_layout.js`, `test_demo.js` |
 
 ## Not in this repo
 - **Data** (download it yourself, see [`data/README.md`](data/README.md)): UCI layouts, ERA5, GEBCO, the coastal-cell table.
 - **The wave-farm simulator**: third-party MATLAB code (Sergiienko, MATLAB Central File Exchange #71840, BSD licence), run in GNU Octave.
-- **Code lost in a workspace reset in October 2026**: simulator calibration and the closed optimisation loop with its controls, the re-implementation of the published pipeline, raw-coordinate / shape-feature / Gaussian-process comparisons, transfer tests, site-energy calculation, Model 1's original 28-feature models. Their results are recorded in `docs/results.md`, tagged as not re-checked.
+- **Code lost in a workspace reset in October 2026 and not yet rebuilt**: the closed optimisation loop with its controls, the simulator calibration search, the Gaussian-process comparison and the site-energy calculation. Their results are recorded in `docs/results.md`, tagged as not re-checked. The `checks/` scripts were written in the 13 Nov 2026 re-check to reproduce the other lost analyses.
 
 ## Run it
 ```bash
@@ -36,9 +42,13 @@ python3 -I pipeline/train_perbuoy.py out cv          # ~10-20 min on a laptop
 python3 -I analysis/model_comparison.py out
 # question 1: waves (ERA5 NetCDF, coastal cells, GEBCO tile in data/)
 python3 -I pipeline/era5_sites.py data/era5_wave_srilanka.nc data/msr_cells.csv data/gebco_2026_n20.0_s-5.0_w70.0_e95.0.nc out
+# Model 1 (needs internet for NOAA + a CDS account for ERA5; GEBCO tile in gebco/)
+# order: pick_stations.py -> era5_download.py -> build_pairs.py -> shelter_classifier.py (see each script's docstring for arguments)
+# transfer tests (all four UCI csv files in data/)
+python3 transfer/transfer.py data out/transfer.json
+# simulator (GNU Octave + octave-netcdf; simulator unzipped to sim/, kR_cutoff.patch applied)
+octave simulator/climate.m sim out sim          # args: simulator dir, output dir, dir with the HCtimeseries .nc files
+octave simulator/run_orig.m sim out/climate_Perth.mat layout.csv 407400 96500 200 result.txt
 # demo
 jupyter notebook demo/wave_farm_demo.ipynb           # or open demo/Wave_Farm_Lab.html in a browser
 ```
-
-## AI assistance
-This README and other documentation in this repository were generated with Claude (Anthropic).

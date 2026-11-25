@@ -6,3 +6,5 @@ matplotlib>=3.9
 xarray>=2024.6
 netCDF4>=1.7
 jupyter
+lightgbm>=4.0
+cdsapi    # only for model1/era5_download.py
