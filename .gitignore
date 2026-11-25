@@ -1,0 +1,16 @@
+# data and outputs are not committed
+data/*
+!data/README.md
+out/
+*.nc
+*.zip
+*.npz
+*.npy
+*.pkl
+model.json
+demo_data.json
+optimised_layout.json
+__pycache__/
+.ipynb_checkpoints/
+.venv/
+.DS_Store

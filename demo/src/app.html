@@ -1,0 +1,902 @@
+<title>Wave Farm Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a lab bench. Header with four views; each view puts the instrument (farm, chart or map) on the left and its readout on the right, stacking on phones. */
+:root {
+  --bg: #F2F5F6;
+  --surface: #FFFFFF;
+  --ink: #0E2233;
+  --muted: #53636F;
+  --rule: #D5DDE2;
+  --chip: #E8EEF1;
+  --sea: #13776B;
+  --sea-soft: #D4EBE7;
+  --coral: #B8472A;
+  --coral-soft: #F7E0D7;
+  --on-coral: #FFFFFF;
+  --mark: #C3CED5;
+  --water: #E3ECF1;
+  --land: #D8D1C1;
+  --wpd-lo: #F0C36D;
+  --wpd-mid: #239C8C;
+  --wpd-hi: #0E2233;
+  --focus: #1F6FB5;
+  --font-display: Cambria, "Cambria Math", Georgia, "Times New Roman", serif;
+  --font-body: Calibri, Carlito, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-data: Consolas, "SF Mono", Menlo, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #09141D; --surface: #0F1F2C; --ink: #E5ECF0; --muted: #9DADB9; --rule: #22374A; --chip: #172C3D;
+    --sea: #5FD3C1; --sea-soft: #123F3A; --coral: #F08A6C; --coral-soft: #4A2519; --on-coral: #1B0D08;
+    --mark: #3E5466; --water: #0C2130; --land: #2E3A45; --wpd-lo: #3D5B6E; --wpd-mid: #2FB7A4; --wpd-hi: #F3E2A0;
+    --focus: #84BCF0; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #09141D; --surface: #0F1F2C; --ink: #E5ECF0; --muted: #9DADB9; --rule: #22374A; --chip: #172C3D;
+  --sea: #5FD3C1; --sea-soft: #123F3A; --coral: #F08A6C; --coral-soft: #4A2519; --on-coral: #1B0D08;
+  --mark: #3E5466; --water: #0C2130; --land: #2E3A45; --wpd-lo: #3D5B6E; --wpd-mid: #2FB7A4; --wpd-hi: #F3E2A0;
+  --focus: #84BCF0; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.45; }
+.wrap { max-width: 1480px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.num { font-variant-numeric: tabular-nums lining-nums; }
+
+/* header */
+.top { background: var(--surface); border-bottom: 1px solid var(--rule); }
+.top-in { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; padding-block: 12px; }
+.brand { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.brand h1 { font-size: 27px; letter-spacing: 0.01em; }
+.brand p { color: var(--muted); font-size: 15px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.tabs a { padding: 8px 14px; border-radius: 6px; color: var(--muted); text-decoration: none; font-weight: 700; font-size: 16px; }
+.tabs a:hover { color: var(--ink); background: var(--chip); }
+.tabs a[aria-current="page"] { background: var(--ink); color: var(--surface); }
+.theme { font: inherit; font-size: 14px; color: var(--muted); background: transparent; border: 1px solid var(--rule); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* views */
+.view { padding-block: 20px 34px; }
+.view-head { display: grid; gap: 6px; max-width: 980px; }
+.view-head h2 { font-size: clamp(23px, 2.4vw, 34px); line-height: 1.12; }
+.eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-size: 13px; font-weight: 700; color: var(--muted); }
+.bench { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); gap: 26px; align-items: start; margin-top: 18px; }
+.stage { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; min-width: 0; display: grid; gap: 10px; }
+.stage canvas { display: block; margin: 0 auto; touch-action: none; max-width: 100%; }
+.stage figcaption { color: var(--muted); font-size: 14.5px; }
+.panel { min-width: 0; display: grid; gap: 18px; align-content: start; }
+.block { display: grid; gap: 10px; }
+.block h3 { font-size: 18px; }
+.note { color: var(--muted); font-size: 14.5px; max-width: 68ch; }
+
+/* readout */
+.readout { display: grid; gap: 8px; }
+.big { font-family: var(--font-display); font-weight: 700; font-size: clamp(56px, 6.4vw, 104px); line-height: 0.95; letter-spacing: -0.01em; }
+.big .unit { font-size: 0.36em; margin-left: 10px; color: var(--muted); font-weight: 700; letter-spacing: 0; }
+.truth { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 17px; }
+.chip { display: inline-block; font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--chip); color: var(--muted); }
+.chip.sea { background: var(--sea-soft); color: var(--sea); }
+.chip.coral { background: var(--coral-soft); color: var(--coral); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.stats div { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+.stats dt { font-size: 13px; color: var(--muted); }
+.stats dd { margin: 2px 0 0; font-size: 22px; font-weight: 700; }
+.stats dd.bad { color: var(--coral); }
+
+.thirds { display: grid; gap: 6px; }
+.third { display: grid; grid-template-columns: 74px minmax(0, 1fr) 76px; align-items: center; gap: 10px; font-size: 15px; }
+.third .track { height: 14px; background: var(--chip); border-radius: 3px; position: relative; overflow: hidden; }
+.third .fill { position: absolute; inset: 0 auto 0 0; background: var(--ink); border-radius: 3px; transition: width .25s ease; }
+.third .val { text-align: right; font-weight: 700; }
+
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.preset { font: inherit; font-size: 15px; padding: 7px 11px; border-radius: 6px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); cursor: pointer; }
+.preset[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); font-weight: 700; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { font: inherit; font-weight: 700; font-size: 16px; padding: 10px 16px; border-radius: 6px; border: 1px solid var(--ink); background: var(--ink); color: var(--surface); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+.btn:disabled { opacity: 0.55; cursor: progress; }
+.status { color: var(--muted); font-size: 15px; min-height: 1.4em; }
+.claim { border: 1px solid var(--coral); background: var(--coral-soft); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; font-size: 15.5px; }
+.claim strong { color: var(--coral); }
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; font-size: 15px; }
+.card h3 { font-size: 16px; }
+.scale { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.scale .bar { height: 10px; border-radius: 3px; }
+.scale .ticks { position: relative; height: 16px; }
+.scale .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.hint { color: var(--muted); font-size: 14.5px; }
+
+/* testing */
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.fact { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 12px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.fact .fig { font-family: var(--font-display); font-size: 34px; font-weight: 700; line-height: 1; }
+.fact span:last-child { font-size: 14.5px; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.seg button { font: inherit; font-size: 15px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+svg text { fill: var(--muted); font-family: var(--font-body); }
+svg .ink { fill: var(--ink); }
+svg .grid { stroke: var(--rule); stroke-width: 1; }
+svg .axis { stroke: var(--muted); stroke-width: 1; }
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-wrap { overflow-x: auto; }
+.legend-row { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--muted); align-items: center; }
+.legend-row i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+
+/* loop */
+.cycle { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; counter-reset: step; }
+.step { position: relative; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; display: grid; gap: 2px; min-width: 0; }
+.step b { font-size: 17px; }
+.step span { color: var(--muted); font-size: 14.5px; }
+.step:not(:last-child)::after { content: "→"; position: absolute; right: -13px; top: 50%; transform: translate(50%, -50%); color: var(--muted); font-size: 20px; }
+.cycle-note { margin-top: 8px; color: var(--muted); font-size: 14.5px; }
+table { border-collapse: collapse; width: 100%; font-size: 15.5px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
+td.r, th.r { text-align: right; }
+tr.loop td:first-child { font-weight: 700; }
+.pos { color: var(--sea); font-weight: 700; }
+.neg { color: var(--coral); font-weight: 700; }
+.caveats { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--muted); font-size: 14.5px; }
+
+/* sites */
+.site-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.site-btn { width: 100%; font: inherit; text-align: left; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); cursor: pointer; }
+.site-btn[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.site-btn .rk { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--coral); color: var(--on-coral); font-weight: 700; font-size: 14px; }
+.site-btn .rk.old { border-radius: 4px; transform: rotate(45deg) scale(0.8); background: var(--ink); color: var(--surface); }
+.site-btn .rk.old span { transform: rotate(-45deg); font-size: 13px; }
+.site-btn .nm { font-weight: 700; font-size: 15.5px; }
+.site-btn .nm small { display: block; font-weight: 400; color: var(--muted); font-size: 13.5px; }
+.site-btn .en { font-weight: 700; text-align: right; font-size: 15px; white-space: nowrap; }
+.kv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.kv div { background: var(--chip); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+.kv dt { font-size: 12.5px; color: var(--muted); }
+.kv dd { margin: 0; font-weight: 700; font-size: 18px; }
+.cw { display: grid; gap: 6px; }
+.cw-row { display: grid; grid-template-columns: 46px minmax(0, 1fr) 54px; gap: 10px; align-items: center; font-size: 15px; }
+.cw-row .track { height: 14px; background: var(--chip); border-radius: 3px; overflow: hidden; }
+.cw-row .fill { height: 100%; background: var(--sea); border-radius: 3px; }
+.tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--surface); font-size: 13.5px; padding: 6px 9px; border-radius: 6px; z-index: 20; max-width: 260px; }
+footer { border-top: 1px solid var(--rule); color: var(--muted); font-size: 13.5px; }
+footer .wrap { padding-block: 14px 24px; }
+
+@media (max-width: 960px) {
+  .bench { grid-template-columns: minmax(0, 1fr); }
+  .tabs { margin-left: 0; }
+}
+@media (max-width: 560px) {
+  .facts { grid-template-columns: minmax(0, 1fr); }
+  .stats div, .kv div { padding: 8px; }
+  .stats dd { font-size: 18px; }
+  .kv dd { font-size: 16px; }
+  .cycle { grid-template-columns: minmax(0, 1fr); }
+  .step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -13px; transform: translate(50%, 50%); }
+  .third { grid-template-columns: 62px minmax(0, 1fr) 70px; }
+}
+@media (prefers-reduced-motion: reduce) { .third .fill { transition: none; } }
+</style>
+
+<header class="top">
+  <div class="wrap top-in">
+    <div class="brand">
+      <h1>Wave Farm Lab</h1>
+      <p>49 submerged buoys · Perth wave climate · EC3 demo</p>
+    </div>
+    <nav class="tabs" aria-label="Views">
+      <a href="#layout" data-view="layout">Layout lab</a>
+      <a href="#testing" data-view="testing">Fair testing</a>
+      <a href="#loop" data-view="loop">Closed loop</a>
+      <a href="#sites" data-view="sites">Where to build</a>
+    </nav>
+    <button id="theme" class="theme" type="button">Dark theme</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 1. LAYOUT LAB -->
+  <section id="view-layout" class="view">
+    <div class="bench" style="margin-top:0">
+      <figure class="stage">
+        <canvas id="farm" tabindex="0" aria-label="Farm layout. Drag a buoy to move it. With the canvas focused, arrow keys move the selected buoy and the bracket keys pick another buoy."></canvas>
+        <div class="scale" aria-hidden="true">
+          <div class="bar" id="pw-bar"></div>
+          <div class="ticks" id="pw-ticks"></div>
+        </div>
+        <figcaption>Drag any buoy. Colour is the model's power for that buoy: teal buoys beat a buoy on its own (96.4 kW), coral ones sit in the shadow of their neighbours. The farm area is 1,000 × 1,010 m.</figcaption>
+      </figure>
+
+      <aside class="panel">
+        <div class="readout">
+          <p class="eyebrow">Predicted farm power</p>
+          <p class="big num"><span id="total">0</span><span class="unit">kW</span></p>
+          <p class="truth" id="truth"></p>
+        </div>
+        <dl class="stats">
+          <div><dt>Per buoy</dt><dd class="num" id="perbuoy">–</dd></div>
+          <div title="Farm power divided by 49 buoys on their own (49 × 96.4 kW)"><dt>Against 49 lone buoys</dt><dd class="num" id="qval">–</dd></div>
+          <div><dt>Closest pair (rule ≥ 50 m)</dt><dd class="num" id="spacing">–</dd></div>
+        </dl>
+        <div class="block">
+          <h3>Front, middle and back of the farm</h3>
+          <div class="thirds" id="thirds"></div>
+          <p class="note">Model's mean power per buoy in each third, ranked by distance up-wave. Across all 10,218 simulated layouts: front 92.7, middle 80.8, back 64.3 kW.</p>
+        </div>
+        <div class="block">
+          <h3>Start from a layout</h3>
+          <div class="presets" id="presets"></div>
+        </div>
+        <div class="block">
+          <div class="actions">
+            <button class="btn" id="optimise" type="button">Let the model optimise</button>
+            <button class="btn ghost" id="reset" type="button">Reset layout</button>
+          </div>
+          <p class="status" id="opt-status" aria-live="polite"></p>
+          <div class="claim" id="claim" hidden></div>
+        </div>
+        <div class="card">
+          <h3>About this model</h3>
+          <p>For each buoy it reads the neighbourhood in the wave's frame: the 12 nearest buoys, how many sit up-wave and down-wave within 150 to 1,200 m, and the gap to the nearest buoy in front, behind and beside. 300 boosted trees turn that into the buoy's power; farm power is the sum of the 49 buoys.</p>
+          <p>Trained on the 10,218 unique Perth layouts except 15% of layout families, held back so Unseen A to D are fair tests. In 5-fold cross-validation with families grouped: <b class="num" id="cv-line"></b>.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- 2. FAIR TESTING -->
+  <section id="view-testing" class="view" hidden>
+    <div class="view-head">
+      <p class="eyebrow">Testing the model fairly</p>
+      <h2>Accuracy drops from R² 0.97 to 0.82 once near-twin layouts stay out of the test set</h2>
+    </div>
+    <div class="bench">
+      <figure class="stage">
+        <canvas id="twin" aria-label="Two layouts that differ by one buoy"></canvas>
+        <div class="actions">
+          <div class="seg" role="group" aria-label="Show layout">
+            <button type="button" data-twin="a" aria-pressed="true">Layout A</button>
+            <button type="button" data-twin="b" aria-pressed="false">Layout B</button>
+          </div>
+          <span class="num" id="twin-read"></span>
+        </div>
+        <figcaption id="twin-cap"></figcaption>
+      </figure>
+      <aside class="panel">
+        <div class="facts" id="facts"></div>
+        <div class="block">
+          <h3>R² for farm power under three ways to split train and test</h3>
+          <div class="actions">
+            <div class="seg" role="group" aria-label="Wave climate">
+              <button type="button" data-site="perth" aria-pressed="true">Perth, 49 buoys</button>
+              <button type="button" data-site="sydney" aria-pressed="false">Sydney, 49 buoys</button>
+            </div>
+          </div>
+          <div class="legend-row">
+            <span><i style="border:2px solid var(--ink)"></i>Random rows</span>
+            <span><i style="background:var(--muted)"></i>Exact repeats grouped</span>
+            <span><i style="background:var(--coral)"></i>Near-twin families grouped</span>
+          </div>
+          <div class="chart-wrap"><svg id="dumbbell" class="chart" role="img" aria-label="R squared by model and split"></svg></div>
+          <p class="note" id="dumbbell-note"></p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- 3. CLOSED LOOP -->
+  <section id="view-loop" class="view" hidden>
+    <div class="view-head">
+      <p class="eyebrow">Model and simulator together · 42 simulations per run</p>
+      <h2>The loop beat the dataset's best layout in all three runs, by 6 to 25 kW. Search without the model managed −3 to +0.6 kW.</h2>
+    </div>
+    <div class="cycle">
+      <div class="step"><b>1 · Model proposes 6 layouts</b><span>It searches its own predictions for promising moves.</span></div>
+      <div class="step"><b>2 · Simulator scores them</b><span>1 to 3 minutes per 49-buoy layout.</span></div>
+      <div class="step"><b>3 · Model retrains</b><span>On every new simulated result, then back to step 1.</span></div>
+    </div>
+    <p class="cycle-note">7 rounds × 6 layouts = 42 simulations, about 78 minutes on one core.</p>
+    <div class="bench">
+      <figure class="stage">
+        <div class="chart-wrap"><svg id="loop-chart" class="chart" role="img" aria-label="Best simulated farm power by round"></svg></div>
+        <figcaption>Best simulated farm power so far, by round (simulator at kR 100). Dashed line: the dataset's best layout re-simulated by our simulator, 4,176.3 kW. Gains in the table use unrounded values.</figcaption>
+      </figure>
+      <aside class="panel">
+        <div class="chart-wrap">
+          <table id="arms">
+            <thead><tr><th>Run</th><th class="r">Gain over dataset best</th><th class="r">Proposals that beat it</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="block">
+          <h3>Model error on its own proposals</h3>
+          <div class="legend-row">
+            <span><i style="background:var(--sea)"></i>Retrained every round</span>
+            <span><i style="background:var(--muted)"></i>Never retrained</span>
+          </div>
+          <div class="chart-wrap"><svg id="mae-chart" class="chart" role="img" aria-label="Mean absolute error by round"></svg></div>
+        </div>
+        <ul class="caveats">
+          <li>Seed 1 re-checked at the stricter kR 200 setting: 4,201.2 vs 4,176.6 kW (+0.59%). Seeds 2 and 3: +5.5 and +21.5 kW.</li>
+          <li>The model's own claims ran about 47 to 54 kW too high. Its value is in choosing which layouts are worth simulating.</li>
+          <li>Loop proposals moved a median of 13 to 16 buoys; random search moved 1 to 3.</li>
+          <li>Three runs against three: p ≈ 0.05, one-sided. Consistent with a real effect, but on thin evidence, inside a simulator that matches the dataset to about ±0.2%.</li>
+        </ul>
+      </aside>
+    </div>
+  </section>
+
+  <!-- 4. WHERE TO BUILD -->
+  <section id="view-sites" class="view" hidden>
+    <div class="view-head">
+      <p class="eyebrow">Southern India and Sri Lanka · 30 to 100 m deep · ERA5 waves 2016–17</p>
+      <h2>The best sites for this buoy are not the ones with the most wave power</h2>
+    </div>
+    <div class="bench">
+      <figure class="stage">
+        <canvas id="map" aria-label="Map of candidate cells coloured by wave power, with the top sites marked"></canvas>
+        <div class="scale" aria-hidden="true">
+          <div class="bar" id="wpd-bar"></div>
+          <div class="ticks" id="wpd-ticks"></div>
+        </div>
+        <figcaption>Each dot is a 0.05° cell (about 5.5 km) 30 to 100 m deep, coloured by mean wave power (0.49 · Hs² · Te, kW per metre of wave front). 5,422 cells, roughly 114 to 167 independent sites at least 40 km apart. Hover for values; click a marker.</figcaption>
+      </figure>
+      <aside class="panel">
+        <ol class="site-list" id="site-list"></ol>
+        <div class="card" id="site-detail"></div>
+        <div class="card">
+          <h3>Why: this buoy is tuned to short waves</h3>
+          <div class="cw" id="cw"></div>
+          <p>Resonance is near 7.6 s. Perth has 50.8 kW/m of waves against Sydney's 15.3, yet one buoy absorbs about 9% less at Perth (96.4 vs 105.8 kW).</p>
+        </div>
+        <p class="note">Energy is absorbed power from a linear model, so read it as an upper bound: at these sites the buoy captures 60 to 75% of the wave power across its own width, where typical heaving devices manage 16 ± 10% (Babarit 2015). With ERA5 peak period in place of mean period, site 1 gives about 21 GWh/yr and ranks 16th.</p>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">Data: UCI Large-scale Wave Energy Farm dataset (Perth, 49 buoys; 36,043 rows), ERA5 reanalysis 2016–17, GEBCO 2026 bathymetry, and the WEC array simulator calibrated in this project. All power figures are absorbed power.</div></footer>
+<div class="tip" id="tip" hidden></div>
+
+<script type="application/json" id="model-json">%%MODEL%%</script>
+<script type="application/json" id="data-json">%%DATA%%</script>
+<script>%%CORE%%</script>
+<script>
+(function () {
+  'use strict';
+  const MODEL = JSON.parse(document.getElementById('model-json').textContent);
+  const D = JSON.parse(document.getElementById('data-json').textContent);
+  WFM.load(MODEL);
+  const C = MODEL.C, S = MODEL.S, P_ISO = MODEL.p_iso, N = 49;
+  const BEST_SIM = 4177659, LOOP_BEST = 4201172;
+  const BOX = { x0: 0, x1: 1000, y0: 0, y1: 1010 };
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = id => document.getElementById(id);
+  const fmt = (v, d = 0) => v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const sgn = (v, d = 1) => (v > 0 ? '+' : v < 0 ? '−' : '±') + fmt(Math.abs(v), d);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const tok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  function rgb(hex) { const h = hex.replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
+  function mix(a, b, t) { return 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')'; }
+  function rng32(s) { return function () { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function gauss(r) { let u = 0; while (u === 0) u = r(); const v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+  function sizeCanvas(cv, aspect, maxH) {
+    const cs = getComputedStyle(cv.parentElement);
+    const w = Math.max(240, cv.parentElement.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight));
+    let cssW = w, cssH = Math.round(w * aspect);
+    if (maxH && cssH > maxH) { cssH = Math.round(maxH); cssW = Math.round(cssH / aspect); }
+    const dpr = window.devicePixelRatio || 1;
+    cv.style.width = cssW + 'px'; cv.style.height = cssH + 'px';
+    cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr);
+    const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: cssW, h: cssH };
+  }
+  const tip = $('tip');
+  function showTip(text, x, y) { tip.textContent = text; tip.hidden = false; const r = tip.getBoundingClientRect(); tip.style.left = clamp(x + 14, 4, innerWidth - r.width - 4) + 'px'; tip.style.top = clamp(y - r.height - 10, 4, innerHeight - r.height - 4) + 'px'; }
+  function hideTip() { tip.hidden = true; }
+
+  /* ---------- shared farm drawing ---------- */
+  function farmGeom(w, h) {
+    const padL = 46, padR = 64, padT = 74, padB = 30;
+    const s = Math.min((w - padL - padR) / (BOX.x1 - BOX.x0), (h - padT - padB) / (BOX.y1 - BOX.y0));
+    const ox = padL, oy = padT + (BOX.y1 - BOX.y0) * s;
+    return { s, X: x => ox + x * s, Y: y => oy - y * s, ix: px => (px - ox) / s, iy: py => (oy - py) / s };
+  }
+  function drawFrame(ctx, g, w, h) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = tok('--surface'); ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = tok('--rule'); ctx.lineWidth = 1; ctx.setLineDash([5, 4]);
+    ctx.strokeRect(g.X(0), g.Y(BOX.y1), BOX.x1 * g.s, BOX.y1 * g.s); ctx.setLineDash([]);
+    ctx.fillStyle = tok('--muted'); ctx.font = '12px ' + tok('--font-body');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let v = 0; v <= 1000; v += 200) ctx.fillText(v === 0 ? '0 m' : fmt(v), g.X(v), g.Y(0) + 8);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let v = 200; v <= 1000; v += 200) ctx.fillText(fmt(v), g.X(0) - 8, g.Y(v));
+    // waves arrive from 55.3 degrees: arrow outside the top-right corner, pointing into the farm
+    const cx = BOX.x1, cy = BOX.y1, L0 = 120, L1 = 18;
+    const ax = g.X(cx + C * L0), ay = g.Y(cy + S * L0), bx = g.X(cx + C * L1), by = g.Y(cy + S * L1);
+    ctx.strokeStyle = tok('--ink'); ctx.fillStyle = tok('--ink'); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    const ang = Math.atan2(by - ay, bx - ax);
+    ctx.beginPath(); ctx.moveTo(bx + 4 * Math.cos(ang), by + 4 * Math.sin(ang));
+    ctx.lineTo(bx - 12 * Math.cos(ang - 0.45), by - 12 * Math.sin(ang - 0.45));
+    ctx.lineTo(bx - 12 * Math.cos(ang + 0.45), by - 12 * Math.sin(ang + 0.45)); ctx.closePath(); ctx.fill();
+    ctx.lineWidth = 1.5; ctx.globalAlpha = 0.55;          // three crests across the arrow
+    for (const k of [0.35, 0.55, 0.75]) {
+      const px = ax + (bx - ax) * k, py = ay + (by - ay) * k, nx = -Math.sin(ang) * 9, ny = Math.cos(ang) * 9;
+      ctx.beginPath(); ctx.moveTo(px - nx, py - ny); ctx.lineTo(px + nx, py + ny); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.font = '700 13px ' + tok('--font-body'); ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText('waves', ax - 12, ay + 1);
+  }
+
+  /* ---------- 1. layout lab ---------- */
+  const presets = D.layouts.map((L, i) => ({ ...L, key: 'd' + i }));
+  (function addGrid() {
+    const x = [], y = [];
+    for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) { x.push(c * 1000 / 6); y.push(r * 1010 / 6); }
+    presets.push({ name: 'Square 7 × 7 grid', x, y, sim_total: null, sim_p: null, held_out: false, key: 'grid' });
+  })();
+  const shortName = ['Best in dataset', 'Unseen A', 'Unseen B', 'Unseen C', 'Unseen D', 'Worst in dataset', '7 × 7 grid'];
+  const farm = { x: [], y: [], preset: 0, modified: false, pred: null, hover: -1, drag: -1, sel: -1, busy: false };
+  const fcv = $('farm'); let fctx = null, fw = 0, fh = 0, fg = null;
+  let pal = null;
+  function readPalette() { pal = { coral: rgb(tok('--coral')), mark: rgb(tok('--mark')), sea: rgb(tok('--sea')) }; }
+  const P_LO = 55, P_HI = 110, P_MID = P_ISO / 1000;
+  function pColor(kw) {
+    if (kw < P_MID) return mix(pal.mark, pal.coral, clamp((P_MID - kw) / (P_MID - P_LO), 0, 1));
+    return mix(pal.mark, pal.sea, clamp((kw - P_MID) / (P_HI - P_MID), 0, 1));
+  }
+  function buildScale() {
+    const mid = 100 * (P_MID - P_LO) / (P_HI - P_LO);
+    $('pw-bar').style.background = `linear-gradient(90deg, var(--coral) 0%, var(--mark) ${mid}%, var(--sea) 100%)`;
+    const t = $('pw-ticks'); t.innerHTML = '';
+    [[55, '55 kW'], [70, '70'], [85, '85'], [P_MID, 'lone buoy 96.4'], [110, '110']].forEach(([v, s]) => {
+      const e = document.createElement('span'); e.textContent = s; e.style.left = (100 * (v - P_LO) / (P_HI - P_LO)) + '%';
+      if (v === 55) e.style.transform = 'none'; if (v === 110) e.style.transform = 'translateX(-100%)';
+      t.appendChild(e);
+    });
+  }
+  function sizeFarm() { const r = sizeCanvas(fcv, 1.0, Math.max(360, innerHeight - 190)); fctx = r.ctx; fw = r.w; fh = r.h; fg = farmGeom(fw, fh); }
+  function drawFarm() {
+    if (!fctx) return;
+    const ctx = fctx, g = fg; drawFrame(ctx, g, fw, fh);
+    const p = farm.pred ? farm.pred.perBuoy : null;
+    const rad = clamp(8.5 * g.s / 0.62, 5, 10);
+    const close = closePairs();
+    if (farm.drag >= 0 || farm.sel >= 0) {
+      const i = farm.drag >= 0 ? farm.drag : farm.sel;
+      ctx.strokeStyle = tok('--muted'); ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(g.X(farm.x[i]), g.Y(farm.y[i]), 50 * g.s, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+    }
+    for (let i = 0; i < N; i++) {
+      const X = g.X(farm.x[i]), Y = g.Y(farm.y[i]);
+      ctx.beginPath(); ctx.arc(X, Y, rad, 0, 2 * Math.PI);
+      ctx.fillStyle = p ? pColor(p[i] / 1000) : tok('--mark'); ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = tok('--surface'); ctx.stroke();
+      if (close.has(i)) { ctx.beginPath(); ctx.arc(X, Y, rad + 4, 0, 2 * Math.PI); ctx.lineWidth = 2.5; ctx.strokeStyle = tok('--coral'); ctx.stroke(); }
+      if (i === farm.hover || i === farm.drag || i === farm.sel) { ctx.beginPath(); ctx.arc(X, Y, rad + 3, 0, 2 * Math.PI); ctx.lineWidth = 2; ctx.strokeStyle = tok('--ink'); ctx.stroke(); }
+    }
+  }
+  function closePairs() {
+    const s = new Set();
+    for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) if (Math.hypot(farm.x[i] - farm.x[j], farm.y[i] - farm.y[j]) < 50) { s.add(i); s.add(j); }
+    return s;
+  }
+  function minSpacing() {
+    let m = Infinity;
+    for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) m = Math.min(m, Math.hypot(farm.x[i] - farm.x[j], farm.y[i] - farm.y[j]));
+    return m;
+  }
+  function thirds(p) {
+    const u = farm.x.map((x, i) => x * C + farm.y[i] * S);
+    const order = u.map((v, i) => i).sort((a, b) => u[b] - u[a] || a - b);
+    const rank = new Array(N); order.forEach((i, r) => { rank[i] = r; });
+    const acc = [[0, 0], [0, 0], [0, 0]];
+    for (let i = 0; i < N; i++) { const k = rank[i] < N / 3 ? 0 : rank[i] < 2 * N / 3 ? 1 : 2; acc[k][0] += p[i]; acc[k][1]++; }
+    return acc.map(([s, n]) => ({ kw: s / n / 1000, n }));
+  }
+  function renderThirds(t) {
+    const host = $('thirds');
+    if (!host.children.length) {
+      ['Front', 'Middle', 'Back'].forEach(name => {
+        const row = document.createElement('div'); row.className = 'third';
+        row.innerHTML = `<span>${name}</span><span class="track"><span class="fill"></span></span><span class="val num"></span>`;
+        host.appendChild(row);
+      });
+    }
+    [...host.children].forEach((row, k) => {
+      row.querySelector('.fill').style.width = (100 * clamp(t[k].kw / 110, 0, 1)) + '%';
+      row.querySelector('.fill').style.background = pColor(t[k].kw);
+      row.querySelector('.val').textContent = fmt(t[k].kw, 1) + ' kW';
+    });
+  }
+  function recompute() {
+    farm.pred = WFM.predict(farm.x, farm.y);
+    const P = presets[farm.preset], tot = farm.pred.total;
+    $('total').textContent = fmt(tot / 1000, 0);
+    $('perbuoy').textContent = fmt(tot / N / 1000, 1) + ' kW';
+    $('qval').textContent = fmt(100 * tot / (N * P_ISO), 1) + '%';
+    const ms = minSpacing(), sp = $('spacing');
+    sp.textContent = fmt(ms, 1) + ' m'; sp.classList.toggle('bad', ms < 50);
+    const tr = $('truth');
+    if (!farm.modified && P.sim_total) {
+      const err = tot - P.sim_total;
+      tr.innerHTML = `<span>Dataset (simulated): <b class="num">${fmt(P.sim_total / 1000, 1)} kW</b></span><span class="num">model ${sgn(err / 1000, 1)} kW (${sgn(100 * err / P.sim_total, 1)}%)</span>` +
+        (P.held_out ? '<span class="chip sea">Layout family never seen in training</span>' : '<span class="chip">In the training data</span>');
+    } else if (!farm.modified) {
+      tr.innerHTML = '<span>Not in the dataset, so there is no simulator value. This is the model\'s estimate.</span><span class="chip coral">Model only</span>';
+    } else {
+      tr.innerHTML = '<span>You moved buoys, so this layout has never been simulated. This is the model\'s estimate.</span><span class="chip coral">Model only</span>';
+    }
+    renderThirds(thirds(farm.pred.perBuoy));
+    drawFarm();
+  }
+  function setPreset(i) {
+    const P = presets[i]; farm.x = P.x.slice(); farm.y = P.y.slice(); farm.preset = i; farm.modified = false; farm.sel = -1;
+    [...$('presets').children].forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+    $('claim').hidden = true; $('opt-status').textContent = '';
+    recompute();
+  }
+  presets.forEach((P, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'preset'; b.textContent = shortName[i] || P.name;
+    b.title = P.sim_total ? `${P.name}: simulated ${fmt(P.sim_total / 1000, 1)} kW` : P.name;
+    b.addEventListener('click', () => { if (!farm.busy) setPreset(i); });
+    $('presets').appendChild(b);
+  });
+  $('reset').addEventListener('click', () => { if (!farm.busy) setPreset(farm.preset); });
+  function hitBuoy(e) {
+    const r = fcv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    let best = -1, bd = 16;
+    for (let i = 0; i < N; i++) { const d = Math.hypot(fg.X(farm.x[i]) - px, fg.Y(farm.y[i]) - py); if (d < bd) { bd = d; best = i; } }
+    return { i: best, px, py };
+  }
+  let raf = 0;
+  function schedule() { if (!raf) raf = requestAnimationFrame(() => { raf = 0; recompute(); }); }
+  fcv.addEventListener('pointerdown', e => {
+    if (farm.busy) return;
+    const h = hitBuoy(e); if (h.i < 0) return;
+    farm.drag = h.i; farm.sel = h.i; fcv.setPointerCapture(e.pointerId); e.preventDefault(); drawFarm();
+  });
+  fcv.addEventListener('pointermove', e => {
+    const h = hitBuoy(e);
+    if (farm.drag >= 0) {
+      const i = farm.drag;
+      farm.x[i] = clamp(fg.ix(h.px), BOX.x0, BOX.x1); farm.y[i] = clamp(fg.iy(h.py), BOX.y0, BOX.y1);
+      farm.modified = true; $('claim').hidden = true; schedule();
+    } else if (h.i !== farm.hover) { farm.hover = h.i; drawFarm(); }
+    const i = farm.drag >= 0 ? farm.drag : h.i;
+    if (i >= 0 && farm.pred) {
+      const P = presets[farm.preset];
+      const sim = !farm.modified && P.sim_p ? ` · dataset ${fmt(P.sim_p[i] / 1000, 1)} kW` : '';
+      showTip(`Buoy ${i + 1}: model ${fmt(farm.pred.perBuoy[i] / 1000, 1)} kW${sim}`, e.clientX, e.clientY);
+    } else hideTip();
+  });
+  const endDrag = () => { if (farm.drag >= 0) { farm.drag = -1; drawFarm(); } };
+  fcv.addEventListener('pointerup', endDrag); fcv.addEventListener('pointercancel', endDrag);
+  fcv.addEventListener('pointerleave', () => { farm.hover = -1; hideTip(); drawFarm(); });
+  fcv.addEventListener('keydown', e => {
+    if (farm.busy) return;
+    if (e.key === ']' || e.key === '[') { farm.sel = ((farm.sel < 0 ? 0 : farm.sel) + (e.key === ']' ? 1 : N - 1)) % N; drawFarm(); e.preventDefault(); return; }
+    const mv = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, 10], ArrowDown: [0, -10] }[e.key];
+    if (!mv) return;
+    if (farm.sel < 0) farm.sel = 0;
+    farm.x[farm.sel] = clamp(farm.x[farm.sel] + mv[0], BOX.x0, BOX.x1); farm.y[farm.sel] = clamp(farm.y[farm.sel] + mv[1], BOX.y0, BOX.y1);
+    farm.modified = true; $('claim').hidden = true; e.preventDefault(); schedule();
+  });
+
+  // optimiser: hill climb on the model's own predictions (seeded, so the demo repeats)
+  $('optimise').addEventListener('click', () => {
+    if (farm.busy) return;
+    farm.busy = true; $('optimise').disabled = true; $('reset').disabled = true; $('claim').hidden = true; farm.sel = -1;
+    const r = rng32(1), TOTAL = 1500, PER_FRAME = reduceMotion ? 1500 : 14;
+    const start = WFM.predict(farm.x, farm.y).total; let best = start, tried = 0, kept = 0;
+    const startSim = !farm.modified && presets[farm.preset].sim_total ? presets[farm.preset].sim_total : null;
+    function ok(i, nx, ny) { for (let j = 0; j < N; j++) if (j !== i && Math.hypot(nx - farm.x[j], ny - farm.y[j]) < 50) return false; return true; }
+    function step() {
+      for (let k = 0; k < PER_FRAME && tried < TOTAL; k++, tried++) {
+        const i = Math.floor(r() * N);
+        const nx = clamp(farm.x[i] + gauss(r) * 40, BOX.x0, BOX.x1), ny = clamp(farm.y[i] + gauss(r) * 40, BOX.y0, BOX.y1);
+        if (!ok(i, nx, ny)) continue;
+        const ox = farm.x[i], oy = farm.y[i]; farm.x[i] = nx; farm.y[i] = ny;
+        const t = WFM.predict(farm.x, farm.y).total;
+        if (t > best) { best = t; kept++; } else { farm.x[i] = ox; farm.y[i] = oy; }
+      }
+      farm.modified = true; recompute();
+      $('opt-status').textContent = `Tried ${fmt(tried)} of ${fmt(TOTAL)} single-buoy moves · kept ${kept}`;
+      if (tried < TOTAL) requestAnimationFrame(step); else finish();
+    }
+    function finish() {
+      farm.busy = false; $('optimise').disabled = false; $('reset').disabled = false;
+      const over = best - BEST_SIM;
+      const line1 = `<p><strong>The model now claims ${fmt(best / 1000, 0)} kW</strong>, up ${fmt((best - start) / 1000, 0)} kW from its estimate for the starting layout` +
+        (startSim ? ` (dataset value ${fmt(startSim / 1000, 0)} kW).` : '.') + '</p>';
+      const overLoop = best - LOOP_BEST;
+      const line2 = over > 0 ? `<p>That would beat the best layout in the dataset (${fmt(BEST_SIM / 1000, 0)} kW) by ${fmt(over / 1000, 0)} kW` +
+          (overLoop > 0 ? `, and the loop's best simulated layout (${fmt(LOOP_BEST / 1000, 0)} kW) by ${fmt(overLoop / 1000, 0)} kW.` : '.') + ' Nobody has simulated this layout.</p>'
+        : `<p>That is still below the best layout in the dataset (${fmt(BEST_SIM / 1000, 0)} kW). Nobody has simulated this layout.</p>`;
+      const line3 = '<p>In our closed loop, a model like this claimed about 50 kW too much for its own proposals, and the simulator confirmed gains of +6 to +25 kW. Model claims need the simulator.</p>';
+      $('claim').innerHTML = line1 + line2 + line3; $('claim').hidden = false;
+      $('opt-status').textContent = `Done: ${fmt(TOTAL)} moves tried, ${kept} kept.`;
+    }
+    requestAnimationFrame(step);
+  });
+  $('cv-line').textContent = `farm R² ${D.cv.family.farm_r2.toFixed(2)}, mean error ${fmt(D.cv.family.farm_mae_kW, 0)} kW`;
+
+  /* ---------- 2. fair testing ---------- */
+  const tcv = $('twin'); let tctx = null, tw = 0, th = 0, tg = null, twinState = 'a', twinT = 0, twinAnim = 0;
+  const A = D.pair.a, B = D.pair.b;
+  const keyOf = (x, y) => x.toFixed(2) + ',' + y.toFixed(2);
+  const setB = new Set(B.x.map((x, i) => keyOf(x, B.y[i])));
+  const setA = new Set(A.x.map((x, i) => keyOf(x, A.y[i])));
+  const ia = A.x.findIndex((x, i) => !setB.has(keyOf(x, A.y[i])));
+  const ib = B.x.findIndex((x, i) => !setA.has(keyOf(x, B.y[i])));
+  const shared = A.x.map((x, i) => [x, A.y[i]]).filter((p, i) => i !== ia);
+  const pA = [A.x[ia], A.y[ia]], pB = [B.x[ib], B.y[ib]];
+  function sizeTwin() { const r = sizeCanvas(tcv, 1.0, Math.max(340, innerHeight - 250)); tctx = r.ctx; tw = r.w; th = r.h; tg = farmGeom(tw, th); }
+  function drawTwin() {
+    if (!tctx) return;
+    const ctx = tctx, g = tg; drawFrame(ctx, g, tw, th);
+    const rad = clamp(8 * g.s / 0.62, 5, 9.5);
+    ctx.fillStyle = tok('--sea');
+    for (const [x, y] of shared) { ctx.beginPath(); ctx.arc(g.X(x), g.Y(y), rad, 0, 2 * Math.PI); ctx.fill(); }
+    const t = twinT, mx = pA[0] + (pB[0] - pA[0]) * t, my = pA[1] + (pB[1] - pA[1]) * t;
+    ctx.setLineDash([3, 3]); ctx.strokeStyle = tok('--coral'); ctx.lineWidth = 1.5;
+    for (const [x, y] of [pA, pB]) { ctx.beginPath(); ctx.arc(g.X(x), g.Y(y), rad + 2, 0, 2 * Math.PI); ctx.stroke(); }
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(g.X(pA[0]), g.Y(pA[1])); ctx.lineTo(g.X(pB[0]), g.Y(pB[1])); ctx.stroke();
+    ctx.beginPath(); ctx.arc(g.X(mx), g.Y(my), rad + 1, 0, 2 * Math.PI); ctx.fillStyle = tok('--coral'); ctx.fill();
+    ctx.fillStyle = tok('--coral'); ctx.font = '700 13px ' + tok('--font-body'); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(`${fmt(D.pair.moved_m)} m`, g.X(Math.max(pA[0], pB[0])) + rad + 8, g.Y((pA[1] + pB[1]) / 2));
+  }
+  function setTwin(s) {
+    twinState = s;
+    document.querySelectorAll('[data-twin]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.twin === s)));
+    const L = s === 'a' ? A : B;
+    $('twin-read').innerHTML = `Layout ${s.toUpperCase()}: <b>${fmt(L.total / 1000, 1)} kW</b> in the dataset`;
+    const target = s === 'a' ? 0 : 1;
+    cancelAnimationFrame(twinAnim);
+    if (reduceMotion) { twinT = target; drawTwin(); return; }
+    const from = twinT, t0 = performance.now();
+    (function anim(now) { const k = clamp((now - t0) / 550, 0, 1), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; twinT = from + (target - from) * e; drawTwin(); if (k < 1) twinAnim = requestAnimationFrame(anim); })(t0);
+  }
+  document.querySelectorAll('[data-twin]').forEach(b => b.addEventListener('click', () => setTwin(b.dataset.twin)));
+  $('twin-cap').textContent = `Layouts A and B share 48 of their 49 buoy positions; one buoy moves ${fmt(D.pair.moved_m)} m. Dataset power ${fmt(A.total / 1000, 1)} and ${fmt(B.total / 1000, 1)} kW. With A in training, predicting B is an open-book exam. These two come from the elite family that holds the best layout.`;
+  $('facts').innerHTML = [
+    [fmt(D.dup_pct, 1) + '%', `of the ${fmt(D.rows)} Perth rows repeat an earlier layout exactly. ${fmt(D.n_unique)} layouts are unique.`],
+    [fmt(D.leak_share_pct, 1) + '%', 'of test layouts still have a one-buoy twin in training when only exact repeats are grouped.'],
+    [fmt(D.largest_family), `layouts (${fmt(100 * D.largest_family / D.n_unique, 1)}%) in the largest twin family. It holds the best layout.`]
+  ].map(([f, t]) => `<div class="fact"><span class="fig num">${f}</span><span>${t}</span></div>`).join('');
+  const R2 = {
+    perth: [['Published pipeline (Subramanian)', .970, .954, .820], ['52 shape features', .984, .977, .937], ['Raw coordinates', .966, .954, .793],
+            ['Per-buoy model (this demo)', null, D.cv.exact.farm_r2, D.cv.family.farm_r2]],
+    sydney: [['Published pipeline (Subramanian)', .997, .990, .970], ['52 shape features', .996, .989, .977], ['Raw coordinates', .989, .979, .950]]
+  };
+  let siteR2 = 'perth';
+  function drawDumbbell() {
+    const rows = R2[siteR2], W = 620, rowH = 58, top = 8, Hh = top + rows.length * rowH + 26;
+    const x0 = 14, x1 = W - 46, lo = 0.75, hi = 1.0, X = v => x0 + (v - lo) / (hi - lo) * (x1 - x0);
+    let s = '';
+    for (let k = 0; k <= 5; k++) {
+      const v = 0.75 + 0.05 * k;
+      s += `<line class="grid" x1="${X(v)}" x2="${X(v)}" y1="${top + 20}" y2="${Hh - 22}"/>`;
+      s += `<text x="${X(v)}" y="${Hh - 6}" text-anchor="middle" font-size="12">${v.toFixed(2)}</text>`;
+    }
+    rows.forEach(([name, r, e, t], k) => {
+      const yT = top + k * rowH + 14, y = yT + 24, vals = [r, e, t].filter(v => v !== null), mx = Math.max(...vals);
+      s += `<text class="ink" x="${x0}" y="${yT}" font-size="14" font-weight="700">${name}</text>`;
+      s += `<line x1="${X(Math.min(...vals))}" x2="${X(mx)}" y1="${y}" y2="${y}" style="stroke:var(--mark);stroke-width:4;stroke-linecap:round"/>`;
+      if (r !== null) s += `<circle cx="${X(r)}" cy="${y}" r="6.5" style="fill:var(--surface);stroke:var(--ink);stroke-width:2"/>`;
+      s += `<circle cx="${X(e)}" cy="${y}" r="6.5" style="fill:var(--muted)"/>`;
+      s += `<circle cx="${X(t)}" cy="${y}" r="7.5" style="fill:var(--coral)"/>`;
+      s += `<text x="${X(t) - 13}" y="${y + 5}" text-anchor="end" font-size="13" font-weight="700" style="fill:var(--coral)">${t.toFixed(3).replace(/^0/, '')}</text>`;
+      s += `<text x="${X(mx) + 11}" y="${y + 5}" font-size="12.5">${mx.toFixed(3).replace(/^0/, '')}</text>`;
+    });
+    const el = $('dumbbell'); el.setAttribute('viewBox', `0 0 ${W} ${Hh}`); el.innerHTML = s;
+    $('dumbbell-note').textContent = siteR2 === 'perth'
+      ? `The published pipeline is our re-implementation (the paper reports 0.972). About two-thirds of its drop comes from the elite family, which scores R² 0.53 when held out. Our per-buoy model holds up best: ${D.cv.exact.farm_r2.toFixed(3)} with repeats grouped, ${D.cv.family.farm_r2.toFixed(3)} with families grouped (mean error ${fmt(D.cv.exact.farm_mae_kW, 1)} → ${fmt(D.cv.family.farm_mae_kW, 1)} kW), but it still under-predicts the elite family by ${fmt(Math.abs(D.cv.family.elite_bias_kW_per_buoy), 1)} kW per buoy.`
+      : 'At Sydney every model scores higher, in the same order: shape features beat raw coordinates, and the gap widens under fair splits.';
+  }
+  document.querySelectorAll('[data-site]').forEach(b => b.addEventListener('click', () => {
+    siteR2 = b.dataset.site; document.querySelectorAll('[data-site]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); drawDumbbell();
+  }));
+
+  /* ---------- 3. closed loop ---------- */
+  const BASE = 4176.3;
+  const ARMS = [
+    { name: 'Loop, seed 1', v: [4151.3, 4155.1, 4176.0, 4194.1, 4194.1, 4201.0, 4201.0], gain: 24.6, pct: 0.59, beat: 10, loop: true, w: 3.2 },
+    { name: 'Loop, seed 3', v: [4144.3, 4162.9, 4189.5, 4195.4, 4195.4, 4198.5, 4198.5], gain: 22.1, pct: 0.53, beat: 11, loop: true, w: 2.2 },
+    { name: 'Loop, seed 2', v: [4159.5, 4165.1, 4182.6, 4182.6, 4182.6, 4182.6, 4182.6], gain: 6.3, pct: 0.15, beat: 5, loop: true, w: 2.2 },
+    { name: 'Random moves, seed 2', v: [4176.9, 4176.9, 4176.9, 4176.9, 4176.9, 4176.9, 4176.9], gain: 0.6, pct: 0.01, beat: 1, loop: false, dash: '6 4' },
+    { name: 'Random moves, seed 1', v: [4174.3, 4174.3, 4174.3, 4174.3, 4174.3, 4174.3, 4175.7], gain: -0.6, pct: -0.02, beat: 0, loop: false, dash: '2 3' },
+    { name: 'Geometry rules', v: [4150.6, 4173.4, 4173.4, 4173.4, 4173.4, 4173.4, 4173.4], gain: -3.0, pct: -0.07, beat: 0, loop: false, dash: '9 3 2 3' }
+  ];
+  function lineChart(el, opt) {
+    const { W, H, xs, ylo, yhi, yticks, series, padL, padR, ylab } = opt, top = 20, bot = 28;
+    const X = i => padL + i / (xs.length - 1) * (W - padL - padR), Y = v => top + (yhi - v) / (yhi - ylo) * (H - top - bot);
+    let s = '';
+    yticks.forEach(v => { s += `<line class="grid" x1="${padL}" x2="${W - padR}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${padL - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="12">${fmt(v)}</text>`; });
+    xs.forEach((x, i) => { s += `<text x="${X(i)}" y="${H - 12}" text-anchor="middle" font-size="12">${x}</text>`; });
+    s += `<text x="${padL - 8}" y="${top - 3}" text-anchor="end" font-size="12">${ylab}</text>`;
+    series.forEach(se => {
+      if (se.hline !== undefined) { s += `<line x1="${padL}" x2="${W - padR}" y1="${Y(se.hline)}" y2="${Y(se.hline)}" style="stroke:var(--ink);stroke-width:1.5;stroke-dasharray:6 5"/>`; if (se.label) s += `<text x="${padL + 6}" y="${Y(se.hline) - 8}" font-size="12" class="ink" style="paint-order:stroke;stroke:var(--surface);stroke-width:5px;stroke-linejoin:round">${se.label}</text>`; return; }
+      const d = se.v.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+      s += `<path d="${d}" style="fill:none;stroke:${se.color};stroke-width:${se.w || 2};stroke-linejoin:round;stroke-linecap:round${se.dash ? ';stroke-dasharray:' + se.dash : ''}"/>`;
+      if (se.dots) se.v.forEach((v, i) => { s += `<circle cx="${X(i)}" cy="${Y(v)}" r="3.5" style="fill:${se.color}"/>`; });
+      if (se.end) s += `<circle cx="${X(se.v.length - 1)}" cy="${Y(se.v[se.v.length - 1])}" r="4.5" style="fill:${se.color}"/>`;
+      if (se.label) s += `<text x="${X(se.v.length - 1) + 9}" y="${Y(se.v[se.v.length - 1]) + 4 + (se.dy || 0)}" font-size="12.5" font-weight="700" style="fill:${se.color}">${se.label}</text>`;
+    });
+    el.setAttribute('viewBox', `0 0 ${W} ${H}`); el.innerHTML = s;
+  }
+  function drawLoop() {
+    const series = [{ hline: BASE, label: 'Dataset best, re-simulated: 4,176.3 kW' }];
+    ARMS.slice().reverse().forEach(a => {
+      series.push({ v: a.v, color: a.loop ? 'var(--sea)' : 'var(--muted)', w: a.loop ? a.w : 1.8, dash: a.dash, end: a.loop,
+        label: a.loop ? a.name.replace('Loop, ', '') : null, dy: a.name === 'Loop, seed 1' ? -6 : a.name === 'Loop, seed 3' ? 7 : 0 });
+    });
+    lineChart($('loop-chart'), { W: 640, H: 330, xs: ['Round 1', '2', '3', '4', '5', '6', '7'], ylo: 4140, yhi: 4206, yticks: [4140, 4150, 4160, 4170, 4180, 4190, 4200], series, padL: 52, padR: 66, ylab: 'kW' });
+    const svg = $('loop-chart');
+    const yc = 20 + (4206 - 4171.0) / 66 * (330 - 48);
+    svg.insertAdjacentHTML('beforeend', `<text x="${640 - 66 + 9}" y="${yc + 4}" font-size="12">model-free</text><text x="${640 - 66 + 9}" y="${yc + 18}" font-size="12">(3 runs)</text>`);
+    const tb = $('arms').querySelector('tbody');
+    tb.innerHTML = ARMS.map(a => `<tr class="${a.loop ? 'loop' : ''}"><td>${a.name}</td><td class="r num ${a.gain > 1 ? 'pos' : a.gain < 0 ? 'neg' : ''}">${sgn(a.gain, 1)} kW (${sgn(a.pct, 2)}%)</td><td class="r num">${a.beat} of 42</td></tr>`).join('');
+    lineChart($('mae-chart'), { W: 520, H: 210, xs: ['Round 1', '2', '3', '4', '5', '6', '7'], ylo: 0, yhi: 130, yticks: [0, 40, 80, 120],
+      series: [{ v: [122.4, 71.2, 55.5, 91.4, 53.9, 40.2, 49.7], color: 'var(--muted)', w: 2, dots: true },
+               { v: [122.4, 49.2, 33.3, 60.6, 27.9, 21.7, 29.3], color: 'var(--sea)', w: 2.6, dots: true }],
+      padL: 40, padR: 14, ylab: 'kW' });
+  }
+
+  /* ---------- 4. where to build ---------- */
+  const SITES = [
+    { k: '1', name: 'Gulf of Mannar / Laccadive Sea', where: 'SE of Kanyakumari', off: [10, 30], lat: 7.6083, lon: 77.9583, km: 67, depth: 78, wpd: 13.0, te: 7.97, cw: 6.81, e: [30.4, 31.6, 32.7] },
+    { k: '2', name: 'Gulf of Mannar', where: 'off Tamil Nadu', off: [30, -22], lat: 8.0083, lon: 78.2583, km: 46, depth: 98, wpd: 10.93, te: 7.63, e: [28.3, 29.3, 30.4] },
+    { k: '3', name: 'Laccadive Sea', where: 'SW of Kanyakumari', off: [-30, 10], lat: 7.5583, lon: 77.1583, km: 66, depth: 83, wpd: 12.26, te: 8.05, e: [27.5, 28.5, 29.5] },
+    { k: '4', name: 'South-east Sri Lanka', where: 'off the south-east coast', off: [28, -12], lat: 6.6083, lon: 81.9583, km: 21, depth: 33, wpd: 12.32, te: 8.39, range: '≈27–29' },
+    { k: '5', name: 'Southern Sri Lanka', where: 'off the south coast', off: [6, 28], lat: 6.0083, lon: 81.4083, km: 24, depth: 88, wpd: 12.98, te: 8.58, range: '≈27–29' },
+    { k: '15', name: 'Nicobar Islands', where: 'most wave power in the band', off: [0, 0], lat: 6.5083, lon: 93.8083, km: 28, depth: 68, wpd: 17.87, te: 9.9, range: '23.8–25.4', old: true }
+  ];
+  const mcv = $('map'); let mctx = null, mw = 0, mh = 0, selSite = 0;
+  const LON = [70, 95], LAT = [-1, 20];
+  const landImg = new Image(); let landReady = false;
+  landImg.onload = () => { landReady = true; if (!$('view-sites').hidden) drawMap(); };
+  landImg.src = D.map.png;
+  function mX(lon) { return (lon - LON[0]) / (LON[1] - LON[0]) * mw; }
+  function mY(lat) { return (LAT[1] - lat) / (LAT[1] - LAT[0]) * mh; }
+  let wpal = null;
+  function wpdColor(v) {
+    const [lo, md, hi] = wpal;
+    const t = clamp((v - 2) / 16, 0, 1);
+    return t < 0.5 ? mix(lo, md, t / 0.5) : mix(md, hi, (t - 0.5) / 0.5);
+  }
+  function sizeMap() { const r = sizeCanvas(mcv, 21 / 25, Math.max(360, innerHeight - 220)); mctx = r.ctx; mw = r.w; mh = r.h; }
+  function drawMap() {
+    if (!mctx) return;
+    const ctx = mctx;
+    ctx.fillStyle = tok('--water'); ctx.fillRect(0, 0, mw, mh);
+    if (landReady) {
+      const oc = document.createElement('canvas'); oc.width = landImg.width; oc.height = landImg.height;
+      const o = oc.getContext('2d'); o.drawImage(landImg, 0, 0); o.globalCompositeOperation = 'source-in'; o.fillStyle = tok('--land'); o.fillRect(0, 0, oc.width, oc.height);
+      const la = D.map.lat, lo = D.map.lon, hl = (la[1] - la[0]) / (landImg.height - 1) / 2, ho = (lo[1] - lo[0]) / (landImg.width - 1) / 2;
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(oc, mX(lo[0] - ho), mY(la[1] + hl), mX(lo[1] + ho) - mX(lo[0] - ho), mY(la[0] - hl) - mY(la[1] + hl));
+    }
+    const sz = Math.max(2, mw / 25 * 0.05 * 1.05);
+    wpal = [rgb(tok('--wpd-lo')), rgb(tok('--wpd-mid')), rgb(tok('--wpd-hi'))];
+    for (const c of D.cells) { ctx.fillStyle = wpdColor(c[2]); ctx.fillRect(mX(c[1]) - sz / 2, mY(c[0]) - sz / 2, sz, sz); }
+    ctx.strokeStyle = tok('--muted'); ctx.globalAlpha = 0.5; ctx.lineWidth = 1; ctx.font = '11.5px ' + tok('--font-body'); ctx.fillStyle = tok('--muted');
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    for (let lo = 75; lo <= 90; lo += 5) ctx.fillText(lo + '°E', mX(lo) + 3, 4);
+    ctx.textBaseline = 'bottom';
+    for (let la = 0; la <= 15; la += 5) ctx.fillText(la + '°N', 4, mY(la) - 2);
+    ctx.globalAlpha = 1;
+    // markers: draw 3, 2, then 1 on top; numbers offset so overlapping sites stay legible
+    const order = [5, 4, 3, 2, 1, 0];
+    for (const i of order) {
+      const s = SITES[i], x = mX(s.lon), y = mY(s.lat), sel = i === selSite;
+      if (s.old) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4); ctx.fillStyle = tok('--ink'); ctx.fillRect(-8, -8, 16, 16);
+        if (sel) { ctx.strokeStyle = tok('--ink'); ctx.lineWidth = 2; ctx.strokeRect(-12, -12, 24, 24); }
+        ctx.restore();
+        ctx.fillStyle = tok('--ink'); ctx.font = '700 12.5px ' + tok('--font-body'); ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText('17.9 kW/m, ranks 15th', x - 16, y + 18);
+        continue;
+      }
+      const r = 10, [dx, dy] = s.off, bx = x + dx, by = y + dy;
+      ctx.strokeStyle = tok('--ink'); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(bx, by); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 2 * Math.PI); ctx.fillStyle = tok('--ink'); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx, by, r, 0, 2 * Math.PI); ctx.fillStyle = tok('--coral'); ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = tok('--surface'); ctx.stroke();
+      if (sel) { ctx.beginPath(); ctx.arc(bx, by, r + 4, 0, 2 * Math.PI); ctx.strokeStyle = tok('--ink'); ctx.lineWidth = 2; ctx.stroke(); }
+      ctx.fillStyle = tok('--on-coral'); ctx.font = '700 12px ' + tok('--font-body'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(s.k, bx, by + 0.5);
+    }
+  }
+  const markerPos = () => SITES.map(s => [mX(s.lon) + s.off[0], mY(s.lat) + s.off[1]]);
+  mcv.addEventListener('pointermove', e => {
+    const r = mcv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    const mp = markerPos(); let hit = -1;
+    mp.forEach(([x, y], i) => { if (Math.hypot(x - px, y - py) < 12) hit = i; });
+    if (hit >= 0) { const s = SITES[hit]; showTip(`${s.old ? 'Nicobar' : 'Site ' + s.k}: ${s.lat.toFixed(2)}°N ${s.lon.toFixed(2)}°E · ${fmt(s.wpd, 1)} kW/m · Te ${fmt(s.te, 2)} s`, e.clientX, e.clientY); mcv.style.cursor = 'pointer'; return; }
+    mcv.style.cursor = 'default';
+    const lon = LON[0] + px / mw * (LON[1] - LON[0]), lat = LAT[1] - py / mh * (LAT[1] - LAT[0]);
+    let best = null, bd = 0.12;
+    for (const c of D.cells) { const d = Math.hypot(c[0] - lat, c[1] - lon); if (d < bd) { bd = d; best = c; } }
+    if (best) showTip(`${best[0].toFixed(2)}°N ${best[1].toFixed(2)}°E · ${fmt(best[2], 1)} kW/m · ${best[3]} m deep · ${best[4]} km offshore`, e.clientX, e.clientY); else hideTip();
+  });
+  mcv.addEventListener('pointerleave', hideTip);
+  mcv.addEventListener('click', e => {
+    const r = mcv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    markerPos().forEach(([x, y], i) => { if (Math.hypot(x - px, y - py) < 12) selectSite(i); });
+  });
+  function siteEnergy(s) { return s.e ? `${fmt(s.e[0], 1)}–${fmt(s.e[2], 1)}` : s.range; }
+  function renderSiteList() {
+    $('site-list').innerHTML = SITES.map((s, i) => `<li><button type="button" class="site-btn" data-i="${i}" aria-pressed="${i === selSite}">
+      <span class="rk ${s.old ? 'old' : ''}"><span>${s.k}</span></span>
+      <span class="nm">${s.name}<small>${s.where} · ${fmt(s.wpd, 1)} kW/m · Te ${fmt(s.te, 1)} s</small></span>
+      <span class="en num">${siteEnergy(s)} GWh/yr</span></button></li>`).join('');
+    $('site-list').querySelectorAll('button').forEach(b => b.addEventListener('click', () => selectSite(+b.dataset.i)));
+  }
+  function selectSite(i) {
+    selSite = i; renderSiteList(); drawMap();
+    const s = SITES[i];
+    const head = s.old ? `Ranked 15th · ${s.name}` : `Site ${s.k} · ${s.name}`;
+    const energy = s.e ? `<p>Energy absorbed by a 49-buoy farm: <b class="num">${s.e.map(v => fmt(v, 1)).join(' / ')} GWh/yr</b> at farm factor q = 0.80 / 0.83 / 0.86.</p>`
+      : `<p>Energy absorbed by a 49-buoy farm: <b class="num">${s.range} GWh/yr</b>.</p>`;
+    const extra = i === 0 ? '<p>Delivered after illustrative losses (×0.8 × 0.9): about 23 GWh/yr. Honest band for absorbed energy: about 20 to 33 GWh/yr, depending on the wave-period assumption.</p>'
+      : s.old ? '<p>The most wave power of any cell in the band, but its 9.9 s waves are long for a buoy that resonates near 7.6 s.</p>' : '';
+    $('site-detail').innerHTML = `<h3>${head}</h3><p class="num">${s.lat.toFixed(2)}°N ${s.lon.toFixed(2)}°E · ${s.km} km offshore · ${s.depth} m deep</p>
+      <dl class="kv"><div><dt>Wave power</dt><dd class="num">${fmt(s.wpd, 1)} kW/m</dd></div><div><dt>Mean period Te</dt><dd class="num">${fmt(s.te, s.old ? 1 : 2)} s</dd></div>
+      <div><dt>${s.cw ? 'Capture width' : 'Rank by energy'}</dt><dd class="num">${s.cw ? fmt(s.cw, 2) + ' m' : (s.old ? '15th' : s.k)}</dd></div></dl>${energy}${extra}`;
+  }
+  function buildMapScale() {
+    $('wpd-bar').style.background = 'linear-gradient(90deg, var(--wpd-lo), var(--wpd-mid), var(--wpd-hi))';
+    const t = $('wpd-ticks'); t.innerHTML = '';
+    [[2, '2 kW/m'], [6, '6'], [10, '10'], [14, '14'], [18, '18']].forEach(([v, s]) => {
+      const e = document.createElement('span'); e.textContent = s; e.style.left = (100 * (v - 2) / 16) + '%';
+      if (v === 2) e.style.transform = 'none'; if (v === 18) e.style.transform = 'translateX(-100%)'; t.appendChild(e);
+    });
+  }
+  $('cw').innerHTML = [[8, 9.7], [12, 3.3], [16, 1.0]].map(([t, w]) => `<div class="cw-row"><span class="num">${t} s</span><span class="track"><span class="fill" style="width:${w / 10 * 100}%; display:block"></span></span><span class="num"><b>${fmt(w, 1)} m</b></span></div>`).join('') +
+    '<p class="note">Capture width at each peak wave period: the width of wave front whose power one buoy absorbs.</p>';
+
+  /* ---------- routing, theme, resize ---------- */
+  const VIEWS = ['layout', 'testing', 'loop', 'sites'];
+  function current() { const h = location.hash.slice(1); return VIEWS.includes(h) ? h : 'layout'; }
+  function show() {
+    const v = current();
+    VIEWS.forEach(n => { $('view-' + n).hidden = n !== v; });
+    document.querySelectorAll('.tabs a').forEach(a => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    hideTip(); layoutAll();
+  }
+  function layoutAll() {
+    readPalette();
+    const v = current();
+    if (v === 'layout') { sizeFarm(); drawFarm(); renderThirds(thirds(farm.pred.perBuoy)); }
+    if (v === 'testing') { sizeTwin(); drawTwin(); drawDumbbell(); }
+    if (v === 'loop') drawLoop();
+    if (v === 'sites') { sizeMap(); drawMap(); }
+  }
+  const root = document.documentElement, mq = matchMedia('(prefers-color-scheme: dark)');
+  const theme = () => root.dataset.theme || (mq.matches ? 'dark' : 'light');
+  function themeLabel() { $('theme').textContent = theme() === 'dark' ? 'Light theme' : 'Dark theme'; }
+  $('theme').addEventListener('click', () => { root.dataset.theme = theme() === 'dark' ? 'light' : 'dark'; });
+  mq.addEventListener('change', () => { themeLabel(); layoutAll(); });
+  new MutationObserver(() => { themeLabel(); layoutAll(); }).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  let rz = 0; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(layoutAll, 80); });
+  addEventListener('hashchange', show);
+
+  readPalette(); buildScale(); buildMapScale(); themeLabel();
+  setPreset(0); setTwin('a'); renderSiteList(); selectSite(0);
+  show();
+  window.__wfm = { farm, presets, recompute, geom: () => fg };
+})();
+</script>
